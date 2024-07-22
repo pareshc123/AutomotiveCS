@@ -1,6 +1,9 @@
 # Function to check if Mozilla Firefox is installed
 function Test-FirefoxExistence {
-    $firefoxPath = "C:\Program Files\Mozilla Firefox\firefox.exe"
+
+    $uninstallKey = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*"
+    $firefoxPath = Get-ItemProperty $uninstallKey | Where-Object {$_.DisplayName -like "Mozilla Firefox"}
+    
     if (Test-Path $firefoxPath) {
         Write-Output "Mozilla Firefox is installed."
         return $true
@@ -42,13 +45,23 @@ function Open-Edge {
     Write-Output "Microsoft Edge opened."
 }
 
-# Function to prompt user for uninstallation of Firefox
+# Function to uninstall Mozilla Firefox
 function Uninstall-Firefox {
-    $userInput = Read-Host "Do you want to uninstall Mozilla Firefox? (Yes/No)"
-    if ($userInput -eq "Yes") {
+    $userInput = Read-Host "Do you want to uninstall Mozilla Firefox? (yes/no)"
+    if ($userInput -like "yes") {
         Write-Output "Uninstalling Mozilla Firefox..."
-        Start-Process "appwiz.cpl"
-        Write-Output "Please find and uninstall Mozilla Firefox from the Control Panel."
+
+        # Get the installer for Mozilla Firefox from the registry
+        $firefoxUninstallPath = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" | 
+            Where-Object { $_.DisplayName -like "Mozilla Firefox" }).UninstallString
+
+        if ($firefoxUninstallPath) {
+            # Run the uninstaller
+            Start-Process -FilePath $firefoxUninstallPath -ArgumentList "/S" -NoNewWindow -Wait
+            Write-Output "Mozilla Firefox has been uninstalled."
+        } else {
+            Write-Output "Mozilla Firefox is not installed on this machine."
+        }
     } else {
         Write-Output "Script ended without uninstalling Mozilla Firefox."
     }
