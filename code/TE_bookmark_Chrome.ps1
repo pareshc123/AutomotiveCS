@@ -1,11 +1,15 @@
 # Function to check if Google Chrome is installed
 function Test-ChromeExistence {
-    $chromePath = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+
+    # Getting the google key property
+    $uninstallKey = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*"
+    $chromePath = Get-ItemProperty $uninstallKey | Where-Object { $_.DisplayName -like "Google Chrome*" }
+    
     if (Test-Path $chromePath) {
         Write-Output "Google Chrome is installed."
         return $true
     } else {
-        Write-Output "Google Chrome is not installed."
+        Write-Output "Google Chrome is not installed. Try Firefox"
         return $false
     }
 }
@@ -31,13 +35,23 @@ function Open-Edge {
     Write-Output "Microsoft Edge opened."
 }
 
-# Function to prompt user for uninstallation of Chrome
+# Function to uninstall Google Chrome
 function Uninstall-Chrome {
     $userInput = Read-Host "Do you want to uninstall Google Chrome? (Yes/No)"
-    if ($userInput -eq "Yes") {
+    if ($userInput -like "yes") {
         Write-Output "Uninstalling Google Chrome..."
-        Start-Process "appwiz.cpl"
-        Write-Output "Please find and uninstall Google Chrome from the Control Panel."
+
+        # Get the installer for Google Chrome from the registry
+        $chromeUninstallPath = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" | 
+            Where-Object { $_.DisplayName -eq "Google Chrome" }).UninstallString
+
+        if ($chromeUninstallPath) {
+            # Run the uninstaller
+            Start-Process -FilePath $chromeUninstallPath -ArgumentList "/silent /uninstall" -NoNewWindow -Wait
+            Write-Output "Google Chrome has been uninstalled."
+        } else {
+            Write-Output "Google Chrome is not installed on this machine."
+        }
     } else {
         Write-Output "Script ended without uninstalling Google Chrome."
     }
